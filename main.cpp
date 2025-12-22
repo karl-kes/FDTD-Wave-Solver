@@ -39,30 +39,50 @@ public:
         }
     }
 
-    // Solving:
+    // System Simulation:
     void update_B() {
         // dB/dt = -curl( E )
-        // Stop at N - 1 to allow for boundary conditions.
-        for ( std::size_t k{}; k < Nz() - 1; ++k ) {
-            for ( std::size_t j{}; j < Ny() - 1; ++j ) {
-                for ( std::size_t i{}; i < Nx() - 1; ++i ) {
-                    // In X: B_x = B_x - dB_x = B_x - curl(E)_x
+        for ( std::size_t z{}; z < Nz() - 1; ++z ) {
+            for ( std::size_t y{}; y < Ny() - 1; ++y ) {
+                for ( std::size_t x{}; x < Nx() - 1; ++x ) {
                     // ∂Bx/∂t = -(∂Ez/∂y - ∂Ey/∂z)
-                    Bx_[idx(i,j,k)] -= 1;
+                    Bx_[idx(x,y,z)] -= dt() * curl_X( Ey_[idx(x,y,z)], Ey_[idx(x,y,z+1)],
+                                                      Ez_[idx(x,y,z)], Ez_[idx(x,y+1,z)] );
 
-                    // In Y: B_y = B_y - dB_y = B_y - curl(E)_y
                     // ∂By/∂t = -(∂Ex/∂z - ∂Ez/∂x)
-                    Bx_[idx(i,j,k)] -= 1;
+                    By_[idx(x,y,z)] -= dt() * curl_Y( Ex_[idx(x,y,z)], Ex_[idx(x,y,z+1)],
+                                                      Ez_[idx(x,y,z)], Ez_[idx(x+1,y,z)] );
 
-                    // In Z: B_z = B_z - dB_z = B_z - curl(E)_z
                     // ∂Bz/∂t = -(∂Ey/∂x - ∂Ex/∂y)
-                    Bx_[idx(i,j,k)] -= 1;
+                    Bz_[idx(x,y,z)] -= dt() * curl_Z( Ey_[idx(x,y,z)], Ey_[idx(x+1,y,z)],
+                                                      Ex_[idx(x,y,z)], Ex_[idx(x,y+1,z)] );
                 }
             }
         }
     }
     void update_E() {
+        // dE/dt = c*c * curl(B)
+        for ( std::size_t z{1}; z < Nz(); ++z ) {
+            for ( std::size_t y{1}; y < Ny(); ++y ) {
+                for ( std::size_t x{1}; x < Nx(); ++x ) {
+                    // ∂Ex/∂t = c*c * (∂Ez/∂y - ∂Ey/∂z)
+                    Ex_[idx(x,y,z)] += dt() * c_sq() * curl_X( By_[idx(x,y,z-1)], By_[idx(x,y,z)],
+                                                                Bz_[idx(x,y-1,z)], Bz_[idx(x,y,z)] );
 
+                    // ∂Ey/∂t = c*c * (∂Ex/∂z - ∂Ez/∂x)
+                    Ey_[idx(x,y,z)] += dt() * c_sq() * curl_Y( Bx_[idx(x,y,z-1)], Bx_[idx(x,y,z)],
+                                                                Bz_[idx(x-1,y,z)], Bz_[idx(x,y,z)] );
+
+                    // ∂Ez/∂t = c*c * (∂Ex/∂y - ∂Ey/∂x)
+                    Ez_[idx(x,y,z)] += dt() * c_sq() * curl_Z( By_[idx(x-1,y,z)], By_[idx(x,y,z)],
+                                                                Bx_[idx(x,y-1,z)], Bx_[idx(x,y,z)] );
+                }
+            }
+        }
+    }
+    void step() {
+        update_B();
+        update_E();
     }
 
     // Getters:
@@ -78,6 +98,9 @@ public:
     double c() const {
         return c_;
     }
+    double c_sq() const {
+        return c_*c_;
+    }
     double dt() const {
         return dt_;
     }
@@ -91,13 +114,33 @@ public:
         return Nz_;
     }
 
-    // Setters:
-
     // Helpers:
+    // Finds 3D index
     std::size_t idx( std::size_t const x, std::size_t const y, std::size_t const z ) const {
         return x + Nx() * ( y + Ny() * z );
     }
+    // Curls in X, Y, Z
+    double curl_X( double const Y_0, double const Y_1,
+                   double const Z_0, double const Z_1 ) const {
+        double dZdY{ ( Z_1 - Z_0 ) / dy() };
+        double dYdZ{ ( Y_1 - Y_0 ) / dz() };
 
+        return ( dZdY - dYdZ );
+    }
+    double curl_Y( double const X_0, double const X_1,
+                   double const Z_0, double const Z_1 ) const {
+        double dXdZ{ ( X_1 - X_0 ) / dz() };
+        double dZdX{ ( Z_1 - Z_0 ) / dx() };
+
+        return ( dXdZ - dZdX );
+    }
+    double curl_Z( double const Y_0, double const Y_1,
+                   double const X_0, double const X_1 ) const {
+        double dYdX{ ( Y_1 - Y_0 ) / dx() };
+        double dXdY{ ( X_1 - X_0 ) / dy() };
+
+        return ( dYdX - dXdY );
+    }
 };
 
 int main() {
