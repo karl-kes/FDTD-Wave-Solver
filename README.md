@@ -49,7 +49,7 @@ g++ -std=c++17 main.cpp -o main.exe
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `Nx, Ny, Nz` | Grid dimensions | 5 |
+| `Nx, Ny, Nz` | Grid dimensions | 10 |
 | `dx, dy, dz` | Spatial step sizes | 1.0 |
 | `c` | Speed of light | 1.0 |
 
@@ -88,14 +88,6 @@ Currently implements **absorbing boundaries** at grid edges (fields decay at bou
 ## Performance
 
 *Results vary by hardware. The `collapse(2)` and `simd` pragmas optimize the nested loops for parallel execution.*
-
-## Future Improvements
-
-- [ ] Perfectly Matched Layer (PML) absorbing boundaries
-- [ ] Material properties (permittivity, permeability, conductivity)
-- [ ] Total-Field/Scattered-Field (TF/SF) source injection
-- [ ] Near-to-far-field transformation
-- [ ] GPU acceleration (CUDA/OpenCL)
 
 ## References
 
