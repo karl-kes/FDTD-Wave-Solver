@@ -3,11 +3,13 @@
 // Constructor:
 Grid::Grid( std::size_t new_Nx, std::size_t new_Ny, std::size_t new_Nz,
             double new_dx, double new_dy, double new_dz,
-            double new_c, double new_eps, double new_mu ):
+            double new_eps, double new_mu ):
 Nx_{ new_Nx }, Ny_{ new_Ny }, Nz_{ new_Nz },
 dx_{ new_dx }, dy_{ new_dy }, dz_{ new_dz },
-c_{ new_c }, eps_{ new_eps }, mu_{ new_mu },
-dt_{ 0.1 / ( c() * std::sqrt( 1.0/(dx()*dx()) + 1.0/(dy()*dy()) + 1.0/(dz()*dz()) ) ) } {
+eps_{ new_eps }, mu_{ new_mu } {
+
+    c_ = 1.0 / std::sqrt( mu() * eps() );
+    dt_ = 0.1 / ( c() * std::sqrt( 1.0/(dx()*dx()) + 1.0/(dy()*dy()) + 1.0/(dz()*dz()) ) );
     
     std::size_t const grid_size{ Nx_ * Ny_ * Nz_ };
     Ex_ = std::make_unique<double[]>( grid_size );
@@ -16,15 +18,6 @@ dt_{ 0.1 / ( c() * std::sqrt( 1.0/(dx()*dx()) + 1.0/(dy()*dy()) + 1.0/(dz()*dz()
     Bx_ = std::make_unique<double[]>( grid_size );
     By_ = std::make_unique<double[]>( grid_size );
     Bz_ = std::make_unique<double[]>( grid_size );
-
-    for ( std::size_t i{}; i < grid_size; ++i ) {
-        Ex_[i] = 0.0;
-        Ey_[i] = 0.0;
-        Ez_[i] = 0.0;
-        Bx_[i] = 0.0;
-        By_[i] = 0.0;
-        Bz_[i] = 0.0;
-    }
 }
 
 // System Simulation:
@@ -97,6 +90,7 @@ void Grid::component_slice( std::size_t const z,
         }
         file << "\n";
     }
+    file.close();
 }
 void Grid::magnitude_slice( std::size_t const z,
                             std::string const &file_name,
@@ -104,18 +98,47 @@ void Grid::magnitude_slice( std::size_t const z,
     std::ofstream file ( file_name );
     for ( std::size_t y{}; y < Ny(); ++y ) {
         for ( std::size_t x{}; x < Nx(); ++ x ) {
-            double Fx{ get_field( field, 'x', x, y, z ) };
-            double Fy{ get_field( field, 'y', x, y, z ) };
-            double Fz{ get_field( field, 'z', x, y, z ) };
-
-            double field_mag{ std::sqrt( Fx*Fx + Fy*Fy + Fz*Fz ) };
-            file << field_mag;
+            double mag{ field_mag( field, x, y, z )};
+            file << mag;
 
             if ( x < Nx() - 1 ) {
                 file << ",";
             }
         }
         file << "\n";
+    }
+    file.close();
+}
+void Grid::magnitude_volume( std::string const &file_name, char const field ) {
+    std::ofstream file( file_name );
+
+    for ( std::size_t z = 0; z < Nz(); ++z ) {
+        for ( std::size_t y = 0; y < Ny(); ++y ) {
+            for ( std::size_t x = 0; x < Nx(); ++x ) {
+                double mag{ field_mag( field, x, y, z ) };
+
+                file << x << "," << y << "," << z << "," << mag << "\n";
+            }
+        }
+    }
+    file.close();
+}
+void Grid::vector_volume( std::string const &file_name, char const field ) {
+    std::ofstream file( file_name );
+    
+    for ( std::size_t z = 0; z < Nz(); ++z ) {
+        for ( std::size_t y = 0; y < Ny(); ++y ) {
+            for ( std::size_t x = 0; x < Nx(); ++x ) {
+                double Fx{ get_field( field, 'x', x, y, z ) };
+                double Fy{ get_field( field, 'y', x, y, z ) };
+                double Fz{ get_field( field, 'z', x, y, z ) };
+                double mag{ field_mag( field, x, y, z ) };
+                
+                file << x << "," << y << "," << z << ","
+                     << Fx << "," << Fy << "," << Fz << ","
+                     << mag << "\n";
+            }
+        }
     }
 }
 
@@ -179,6 +202,16 @@ double Grid::get_field( char const field,
     }
     std::cout << "ERROR! CHECK PARAMETERS!" << std::endl;
     return 0.0;
+}
+double Grid::field_mag( char const field,
+                        std::size_t const x,
+                        std::size_t const y,
+                        std::size_t const z ) const {
+    double Fx{ get_field( field, 'x', x, y, z ) };
+    double Fy{ get_field( field, 'y', x, y, z ) };
+    double Fz{ get_field( field, 'z', x, y, z ) };
+
+    return std::sqrt( Fx*Fx + Fy*Fy + Fz*Fz );
 }
 
 // Helpers:

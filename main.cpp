@@ -9,11 +9,13 @@ int main() {
 
         For No Parallel (NOT RECOMMENDED):
         g++ -std=c++17 main.cpp Classes/grid.cpp -o main.exe
+        ./main.exe
+        ./render.py
 
         For Parallel (RECOMMENDED):
         g++ -std=c++17 main.cpp Classes/grid.cpp -o main.exe -fopenmp
-
         ./main.exe
+        ./render.py
     */
 
     // Clear previous and create new output folder.
@@ -21,10 +23,13 @@ int main() {
     std::filesystem::create_directories("output");
 
     int constexpr elapsed_time{ 1000 };
-    std::size_t constexpr Nx{ 50 }, Ny{ 50 }, Nz{ 50 };
+    std::size_t constexpr Nx{ 10 }, Ny{ 10 }, Nz{ 10 };
+    double constexpr inject{ 10.0 };
 
     Grid grid{ Nx, Ny, Nz };
-    grid.inject_source( 25, 25, 25, 100.0 );
+
+    grid.inject_source( 3*Nx/4, 3*Ny/4,3*Nz/4, inject );
+    grid.inject_source( Nx/4, Ny/4, Nz/4, inject );
 
     double initial_energy{ grid.total_energy() };
     double max_energy_drift{ initial_energy };
@@ -38,8 +43,7 @@ int main() {
 
         if ( t % 10 == 0 ) {
             std::string t_sec{ std::to_string( t ) };
-            grid.magnitude_slice( 1, "output/E" + t_sec + ".csv", 'E' );
-            grid.magnitude_slice( 1, "output/B" + t_sec + ".csv", 'B' );
+            grid.vector_volume( "output/E" + t_sec + ".csv", 'E' );
         }
     }
     auto end = std::chrono::high_resolution_clock::now();

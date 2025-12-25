@@ -1,57 +1,81 @@
+import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import glob
 import os
 
-e_files = sorted(glob.glob("output/E*.csv"), 
-                 key=lambda x: int(os.path.basename(x).replace('E', '').replace('.csv', '')))
-b_files = sorted(glob.glob("output/B*.csv"), 
-                 key=lambda x: int(os.path.basename(x).replace('B', '').replace('.csv', '')))
+def load_volume_data(file_path):
+    cols = ['x', 'y', 'z', 'Fx', 'Fy', 'Fz', 'mag']
+    df = pd.read_csv(file_path, names=cols)
+    
+    nx, ny, nz = int(df['x'].max() + 1), int(df['y'].max() + 1), int(df['z'].max() + 1)
+    
+    vol = df.sort_values(by=['z', 'y', 'x'])['mag'].values.reshape((nz, ny, nx))
+    return vol, (nx, ny, nz)
 
-e_data = [np.loadtxt(f, delimiter=',') for f in e_files]
-b_data = [np.loadtxt(f, delimiter=',') for f in b_files]
+# 1. Load data files
+files = sorted(glob.glob("output/E*.csv"), 
+               key=lambda x: int(''.join(filter(str.isdigit, x))))
 
-e_limit = max(d.max() for d in e_data)
-b_limit = max(d.max() for d in b_data)
+volume_list = []
+for f in files:
+    v, shape = load_volume_data(f)
+    volume_list.append(np.sqrt(v))
 
-n_frames = len(e_data)
+nz, ny, nx = shape
+z, y, x = np.mgrid[0:nz, 0:ny, 0:nx]
 
+# 2. Build Animation Frames with Dynamic Scaling
 frames = []
-for i in range(n_frames):
-    frames.append(go.Frame(data=[
-        go.Surface(z=e_data[i], cmin=0, cmax=e_limit, colorscale='Inferno', showscale=True),
-        go.Surface(z=b_data[i], cmin=0, cmax=b_limit, colorscale='Viridis', showscale=True)
-    ], name=str(i)))
+for i, vol in enumerate(volume_list):
+    v_max = vol.max() if vol.max() > 1e-15 else 1.0
+    v_min = v_max * 0.05 
+    
+    frames.append(go.Frame(
+        data=[go.Volume(
+            value=vol.flatten(),
+            isomin=v_min,
+            isomax=v_max
+        )],
+        name=str(i)
+    ))
 
-fig = make_subplots(
-    rows=1, cols=2,
-    specs=[[{'type': 'surface'}, {'type': 'surface'}]],
-    subplot_titles=['|E| Electric Field', '|B| Magnetic Field']
+# 3. Create Final Figure
+first_max = volume_list[0].max() if volume_list[0].max() > 1e-15 else 1.0
+fig = go.Figure(
+    data=[go.Volume(
+        x=x.flatten(), y=y.flatten(), z=z.flatten(),
+        value=volume_list[0].flatten(),
+        isomin=first_max * 0.05,
+        isomax=first_max,
+        opacity=0.15,
+        surface_count=30,
+        colorscale='Inferno',
+        showscale=True,
+        colorbar=dict(title="Field Intensity", thickness=20),
+        caps=dict(x_show=False, y_show=False, z_show=False)
+    )],
+    layout=go.Layout(
+        template="plotly_dark",
+        title="Field Propogation",
+        scene=dict(
+            xaxis=dict(title="X"),
+            yaxis=dict(title="Y"),
+            zaxis=dict(title="Z"),
+            aspectmode='cube'
+        ),
+        updatemenus=[dict(
+            type="buttons",
+            buttons=[
+                dict(label="Play", method="animate", 
+                     args=[None, {"frame": {"duration": 50, "redraw": True}, "fromcurrent": True}]),
+                dict(label="Pause", method="animate", 
+                     args=[[None], {"mode": "immediate"}])
+            ],
+            x=0.1, y=0
+        )]
+    ),
+    frames=frames
 )
 
-fig.add_trace(go.Surface(z=e_data[0], cmin=0, cmax=e_limit, colorscale='Inferno'), row=1, col=1)
-fig.add_trace(go.Surface(z=b_data[0], cmin=0, cmax=b_limit, colorscale='Viridis'), row=1, col=2)
-
-fig.update_layout(
-    updatemenus=[dict(
-        type="buttons",
-        buttons=[dict(label="Play", method="animate", 
-                      args=[None, {"frame": {"duration": 100}, "transition": {"duration": 0}}])]
-    )]
-)
-
-for scene in ['scene', 'scene2']:
-    limit = e_limit if scene == 'scene' else b_limit
-    fig.update_layout(**{
-        scene: dict(
-            xaxis=dict(autorange=False, range=[0, e_data[0].shape[1]]),
-            yaxis=dict(autorange=False, range=[0, e_data[0].shape[0]]),
-            zaxis=dict(autorange=False, range=[0, limit]),
-            aspectmode='manual',
-            aspectratio=dict(x=1, y=1, z=0.5)
-        )
-    })
-
-fig.frames = frames
 fig.show()

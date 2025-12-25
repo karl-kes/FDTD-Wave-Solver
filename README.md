@@ -30,19 +30,23 @@ $$\Delta t <= \frac{1.0}{c \sqrt{\frac{1}{\Delta x^2} + \frac{1}{\Delta y^2} + \
 
 - C++17 compiler (GCC recommended)
 - OpenMP support
-- Python 3.x with NumPy and Plotly
+- Python 3.x with NumPy, Pandas, and Plotly
 
 ### Build & Run
 
 ```bash
 # Compile with OpenMP (recommended)
 g++ -std=c++17 main.cpp -o main.exe -fopenmp
+./main.exe
+./render.py
 ```
 
 ### Without OpenMP
 
 ```bash
 g++ -std=c++17 main.cpp -o main.exe
+./main.exe
+./render.py
 ```
 
 ### Grid Constructor Parameters
@@ -55,7 +59,7 @@ g++ -std=c++17 main.cpp -o main.exe
 
 ## Visualization
 
-The included Python script generates an interactive 3D animation of the Ez field evolution:
+The included Python script generates an interactive 3D animation of field evolution:
 
 ```python
 python render.py
@@ -65,31 +69,11 @@ python render.py
 
 ```
 ├── main.cpp          # Grid class and simulation driver
-├── visualize.py      # Plotly animation generator
+├── render.py      # Plotly animation generator
 ├── output/           # CSV slice exports
 └── README.md
 ```
 
-## Theory
-
-### Yee Algorithm
-
-The Yee scheme staggers E and B fields both spatially and temporally:
-
-1. **B-field update** (half time step): Uses E-field curl at current positions
-2. **E-field update** (full time step): Uses B-field curl at offset positions
-
-This leapfrog integration preserves the divergence-free nature of the magnetic field and maintains second-order accuracy in both space and time.
-
-### Boundary Conditions
-
-Currently implements **absorbing boundaries** at grid edges (fields decay at boundaries). The update loops exclude boundary cells to prevent out-of-bounds access.
-
 ## Performance
 
 *Results vary by hardware. The `collapse(2)` and `simd` pragmas optimize the nested loops for parallel execution.*
-
-## References
-
-1. Yee, K. S. (1966). "Numerical solution of initial boundary value problems involving Maxwell's equations in isotropic media." *IEEE Transactions on Antennas and Propagation*.
-2. Taflove, A., & Hagness, S. C. (2005). *Computational Electrodynamics: The Finite-Difference Time-Domain Method*. Artech House.
