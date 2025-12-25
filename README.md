@@ -22,7 +22,7 @@ $$\frac{\partial \mathbf{E}}{\partial t} = c^2 \nabla \times \mathbf{B}$$
 
 The time step is automatically calculated to satisfy the Courant-Friedrichs-Lewy condition:
 
-$$\Delta t = \frac{0.99}{c \sqrt{\frac{1}{\Delta x^2} + \frac{1}{\Delta y^2} + \frac{1}{\Delta z^2}}}$$
+$$\Delta t <= \frac{1.0}{c \sqrt{\frac{1}{\Delta x^2} + \frac{1}{\Delta y^2} + \frac{1}{\Delta z^2}}}$$
 
 ## Quick Start
 
