@@ -36,14 +36,6 @@ public:
                         std::size_t const y,
                         std::size_t const z, 
                         double const value );
-    void component_slice( std::size_t const z,
-                          std::string const &file_name,
-                          char const field,
-                          char const component );
-    void magnitude_slice( std::size_t const z,
-                          std::string const &file_name,
-                          char const field );
-    void magnitude_volume( std::string const &file_name, char const field );
     void vector_volume( std::string const &file_name, char const field );
 
     // Getters:
