@@ -9,6 +9,7 @@
 #include <omp.h>
 #include <vector>
 #include <cstdint>
+#include <filesystem>
 
 class Grid {
 private:
@@ -77,14 +78,16 @@ public:
                      std::size_t const y,
                      std::size_t const z ) const;
     // Curls in X, Y, Z
-    double curl_X( double const Y_0, double const Y_1,
+    double curl_x( double const Y_0, double const Y_1,
                    double const Z_0, double const Z_1 ) const;
 
-    double curl_Y( double const X_0, double const X_1,
+    double curl_y( double const X_0, double const X_1,
                    double const Z_0, double const Z_1 ) const;
 
-    double curl_Z( double const Y_0, double const Y_1,
+    double curl_z( double const Y_0, double const Y_1,
                    double const X_0, double const X_1 ) const;
 
     double total_energy() const;
+    void create_directories() const;
+    void output_final_metrics( int elapsed_time, std::chrono::milliseconds duration, double drift ) const;
 };

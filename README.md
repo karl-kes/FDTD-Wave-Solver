@@ -36,7 +36,7 @@ $$\Delta t <= \frac{1.0}{c \sqrt{\frac{1}{\Delta x^2} + \frac{1}{\Delta y^2} + \
 
 ```bash
 # Compile with OpenMP (recommended)
-g++ -std=c++17 main.cpp -o main.exe -fopenmp
+g++ -std=c++17 main.cpp Classes/Grid/grid.cpp -o main.exe -fopenmp
 ./main.exe
 ./render.py
 ```
@@ -44,7 +44,7 @@ g++ -std=c++17 main.cpp -o main.exe -fopenmp
 ### Without OpenMP
 
 ```bash
-g++ -std=c++17 main.cpp -o main.exe
+g++ -std=c++17 main.cpp Classes/Grid/grid.cpp -o main.exe
 ./main.exe
 ./render.py
 ```
@@ -70,7 +70,7 @@ python render.py
 ```
 ├── main.cpp          # Grid class and simulation driver
 ├── render.py      # Plotly animation generator
-├── output/           # CSV slice exports
+├── output/           # Data exports
 └── README.md
 ```
 

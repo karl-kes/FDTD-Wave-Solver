@@ -22,44 +22,48 @@ eps_{ new_eps }, mu_{ new_mu } {
 
 // System Simulation:
 void Grid::update_B() {
-    // dB/dt = -curl( E )
+    // ∂B/∂t = -curl( E )
     #pragma omp parallel for collapse( 2 )
+    // Start at 0; stagger for Yee-Cell grid.
     for ( std::size_t z = 0; z < Nz() - 1; ++z ) {
         for ( std::size_t y = 0; y < Ny() - 1; ++y ) {
             #pragma omp simd
             for ( std::size_t x = 0; x < Nx() - 1; ++x ) {
-                // ∂Bx/∂t = -(∂Ez/∂y - ∂Ey/∂z)
-                Bx_[idx(x,y,z)] -= dt() * curl_X( Ey_[idx(x,y,z)], Ey_[idx(x,y,z+1)],
+                // Take curl of components and apply B -= ∂B:
+                // ∂B_x = ∂t * curl_x( E )
+                Bx_[idx(x,y,z)] -= dt() * curl_x( Ey_[idx(x,y,z)], Ey_[idx(x,y,z+1)],
                                                   Ez_[idx(x,y,z)], Ez_[idx(x,y+1,z)] );
 
-                // ∂By/∂t = -(∂Ex/∂z - ∂Ez/∂x)
-                By_[idx(x,y,z)] -= dt() * curl_Y( Ex_[idx(x,y,z)], Ex_[idx(x,y,z+1)],
+                // ∂B_y = ∂t * curl_y( E )
+                By_[idx(x,y,z)] -= dt() * curl_y( Ex_[idx(x,y,z)], Ex_[idx(x,y,z+1)],
                                                   Ez_[idx(x,y,z)], Ez_[idx(x+1,y,z)] );
 
-                // ∂Bz/∂t = -(∂Ey/∂x - ∂Ex/∂y)
-                Bz_[idx(x,y,z)] -= dt() * curl_Z( Ey_[idx(x,y,z)], Ey_[idx(x+1,y,z)],
+                // ∂B_z = ∂t * curl_z( E )
+                Bz_[idx(x,y,z)] -= dt() * curl_z( Ey_[idx(x,y,z)], Ey_[idx(x+1,y,z)],
                                                   Ex_[idx(x,y,z)], Ex_[idx(x,y+1,z)] );
             }
         }
     }
 }
 void Grid::update_E() {
-    // dE/dt = c*c * curl(B)
+    // ∂E/∂t = c*c * curl(B)
     #pragma omp parallel for collapse( 2 )
+    // Start at 1; stagger for Yee-Cell grid.
     for ( std::size_t z = 1; z < Nz(); ++z ) {
         for ( std::size_t y = 1; y < Ny(); ++y ) {
             #pragma omp simd
             for ( std::size_t x = 1; x < Nx(); ++x ) {
-                // ∂Ex/∂t = c*c * (∂Ez/∂y - ∂Ey/∂z)
-                Ex_[idx(x,y,z)] += dt() * c_sq() * curl_X( By_[idx(x,y,z-1)], By_[idx(x,y,z)],
+                // Curl of components and apply E += ∂E:
+                // ∂E_x = ∂t * c*c * (∂E_z/∂y - ∂E_y/∂z)
+                Ex_[idx(x,y,z)] += dt() * c_sq() * curl_x( By_[idx(x,y,z-1)], By_[idx(x,y,z)],
                                                            Bz_[idx(x,y-1,z)], Bz_[idx(x,y,z)] );
 
-                // ∂Ey/∂t = c*c * (∂Ex/∂z - ∂Ez/∂x)
-                Ey_[idx(x,y,z)] += dt() * c_sq() * curl_Y( Bx_[idx(x,y,z-1)], Bx_[idx(x,y,z)],
+                // ∂E_y = ∂t * c*c * (∂Ex/∂z - ∂Ez/∂x)
+                Ey_[idx(x,y,z)] += dt() * c_sq() * curl_y( Bx_[idx(x,y,z-1)], Bx_[idx(x,y,z)],
                                                            Bz_[idx(x-1,y,z)], Bz_[idx(x,y,z)] );
 
-                // ∂Ez/∂t = c*c * (∂Ex/∂y - ∂Ey/∂x)
-                Ez_[idx(x,y,z)] += dt() * c_sq() * curl_Z( By_[idx(x-1,y,z)], By_[idx(x,y,z)],
+                // ∂E_z = ∂t * c*c * (∂Ex/∂y - ∂Ey/∂x)
+                Ez_[idx(x,y,z)] += dt() * c_sq() * curl_z( By_[idx(x-1,y,z)], By_[idx(x,y,z)],
                                                            Bx_[idx(x,y-1,z)], Bx_[idx(x,y,z)] );
             }
         }
@@ -75,54 +79,6 @@ void Grid::inject_source( std::size_t const x,
                           double const value ) {
     Ez_[idx(x,y,z)] += value;
 }
-void Grid::component_slice( std::size_t const z,
-                            std::string const &file_name,
-                            char const field,
-                            char const component ) {
-    std::ofstream file( file_name );
-    for ( std::size_t y{}; y < Ny(); ++ y ) {
-        for ( std::size_t x{}; x< Nx(); ++x ) {
-            file << get_field( field, component, x, y, z );
-            
-            if ( x < Nx() - 1 ) {
-                file << ",";
-            }
-        }
-        file << "\n";
-    }
-    file.close();
-}
-void Grid::magnitude_slice( std::size_t const z,
-                            std::string const &file_name,
-                            char const field ) {
-    std::ofstream file ( file_name );
-    for ( std::size_t y{}; y < Ny(); ++y ) {
-        for ( std::size_t x{}; x < Nx(); ++ x ) {
-            double mag{ field_mag( field, x, y, z )};
-            file << mag;
-
-            if ( x < Nx() - 1 ) {
-                file << ",";
-            }
-        }
-        file << "\n";
-    }
-    file.close();
-}
-void Grid::magnitude_volume( std::string const &file_name, char const field ) {
-    std::ofstream file( file_name );
-
-    for ( std::size_t z = 0; z < Nz(); ++z ) {
-        for ( std::size_t y = 0; y < Ny(); ++y ) {
-            for ( std::size_t x = 0; x < Nx(); ++x ) {
-                double mag{ field_mag( field, x, y, z ) };
-
-                file << x << "," << y << "," << z << "," << mag << "\n";
-            }
-        }
-    }
-    file.close();
-}
 void Grid::vector_volume( std::string const &file_name, char const field ) {
     std::ofstream file( file_name, std::ios::binary | std::ios::out );
 
@@ -136,6 +92,7 @@ void Grid::vector_volume( std::string const &file_name, char const field ) {
         buffer.clear();
         for ( std::size_t y = 0; y < Ny() - 1; ++y ) {
             for ( std::size_t x = 0; x < Nx() - 1; ++x ) {
+                // Average to fix the staggering for visual output.
                 double Fx_avg{ 0.5 * ( get_field( field, 'x', x, y, z ) + get_field( field, 'x', x+1, y, z ) ) };
                 double Fy_avg{ 0.5 * ( get_field( field, 'y', x, y, z ) + get_field( field, 'y', x, y+1, z ) ) };
                 double Fz_avg{ 0.5 * ( get_field( field, 'z', x, y, z ) + get_field( field, 'z', x, y, z+1 ) ) };
@@ -231,21 +188,21 @@ std::size_t Grid::idx( std::size_t const x,
     return x + Nx() * ( y + Ny() * z );
 }
 // Curls in X, Y, Z
-double Grid::curl_X( double const Y_0, double const Y_1,
+double Grid::curl_x( double const Y_0, double const Y_1,
                      double const Z_0, double const Z_1 ) const {
     double dZdY{ ( Z_1 - Z_0 ) / dy() };
     double dYdZ{ ( Y_1 - Y_0 ) / dz() };
 
     return ( dZdY - dYdZ );
 }
-double Grid::curl_Y( double const X_0, double const X_1,
+double Grid::curl_y( double const X_0, double const X_1,
                      double const Z_0, double const Z_1 ) const {
     double dXdZ{ ( X_1 - X_0 ) / dz() };
     double dZdX{ ( Z_1 - Z_0 ) / dx() };
 
     return ( dXdZ - dZdX );
 }
-double Grid::curl_Z( double const Y_0, double const Y_1,
+double Grid::curl_z( double const Y_0, double const Y_1,
                      double const X_0, double const X_1 ) const {
     double dYdX{ ( Y_1 - Y_0 ) / dx() };
     double dXdY{ ( X_1 - X_0 ) / dy() };
@@ -273,4 +230,15 @@ double Grid::total_energy() const {
     }
 
     return energy * dV;
+}
+void Grid::create_directories() const {
+    // Clear previous and create new output folder.
+    std::filesystem::remove_all("output");
+    std::filesystem::create_directories("output/E");
+    std::filesystem::create_directories("output/B");
+}
+void Grid::output_final_metrics( int elapsed_time, std::chrono::milliseconds duration, double drift ) const {
+    std::cout << "Physical Time Simulated: " << elapsed_time * dt() << " s" << std::endl;
+    std::cout << "Duration of Simulation: " << duration.count() << " ms" << std::endl;
+    std::cout << "Max Energy Drift: " << drift << "%" << std::endl;
 }
