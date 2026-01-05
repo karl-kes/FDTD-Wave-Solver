@@ -1,20 +1,21 @@
 #include "Classes/Grid/grid.hpp"
 #include "constant.hpp"
 
+/* 
+    To compile and run.
+
+    For No Parallel (NOT RECOMMENDED):
+    g++ -std=c++17 main.cpp Classes/Grid/grid.cpp -o main.exe
+    ./main.exe
+    ./render.py
+
+    For Parallel (RECOMMENDED):
+    g++ -std=c++17 main.cpp Classes/Grid/grid.cpp -o main.exe -fopenmp
+    ./main.exe
+    ./render.py
+*/
+
 int main() {
-    /* 
-        To compile and run.
-
-        For No Parallel (NOT RECOMMENDED):
-        g++ -std=c++17 main.cpp Classes/Grid/grid.cpp -o main.exe
-        ./main.exe
-        ./render.py
-
-        For Parallel (RECOMMENDED):
-        g++ -std=c++17 main.cpp Classes/Grid/grid.cpp -o main.exe -fopenmp
-        ./main.exe
-        ./render.py
-    */
 
     // Construct the grid and create its directories
     Grid grid{ constant::Nx+1, constant::Ny+1, constant::Nz+1 };
