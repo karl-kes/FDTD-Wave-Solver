@@ -79,8 +79,9 @@ public:
     double curl_z( double const Y_0, double const Y_1,
                    double const X_0, double const X_1 ) const;
 
+    // Div(B) and total energy for validation
     double div_B() const;
     double total_energy() const;
+    // Deletes previous data and creates new files
     void create_directories() const;
-    void output_final_metrics( int elapsed_time, std::chrono::milliseconds duration, double drift, double max_div_B ) const;
 };

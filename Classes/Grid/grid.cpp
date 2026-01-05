@@ -237,9 +237,9 @@ double Grid::div_B() const {
     double max_div{};
 
     #pragma omp parallel for collapse( 2 ) reduction( max:max_div )
-    for ( std::size_t z = 0; z < Nz() - 1; ++z ) {
-        for ( std::size_t y = 0; y < Ny() - 1; ++y ) {
-            for ( std::size_t x = 0; x < Nx() - 1; ++x ) {
+    for ( std::size_t z = 0; z < Nz(); ++z ) {
+        for ( std::size_t y = 0; y < Ny(); ++y ) {
+            for ( std::size_t x = 0; x < Nx(); ++x ) {
                 double div{ ( Bx_[idx(x+1,y,z)] - Bx_[idx(x,y,z)] ) / dx() +
                             ( By_[idx(x,y+1,z)] - By_[idx(x,y,z)] ) / dy() +
                             ( Bz_[idx(x,y,z+1)] - Bz_[idx(x,y,z)] ) / dz() };
@@ -254,10 +254,4 @@ void Grid::create_directories() const {
     std::filesystem::remove_all("output");
     std::filesystem::create_directories("output/E");
     std::filesystem::create_directories("output/B");
-}
-void Grid::output_final_metrics( int elapsed_time, std::chrono::milliseconds duration, double drift, double max_div_B ) const {
-    std::cout << "Physical Time Simulated: " << elapsed_time * dt() << " s" << std::endl;
-    std::cout << "Duration of Simulation: " << duration.count() << " ms" << std::endl;
-    std::cout << "Max Energy Drift: " << drift << "%" << std::endl;
-    std::cout << "Max Magnetic Divergence: " << max_div_B << std::endl;
 }
