@@ -4,12 +4,12 @@
     To compile and run.
 
     For No Parallel (NOT RECOMMENDED):
-    g++ -std=c++17 main.cpp Classes/Grid/grid.cpp -o main.exe
+    g++ -std=c++17 main.cpp Classes/Grid/grid_constructor.cpp Classes/Grid/grid_getters.cpp Classes/Grid/grid_simulation.cpp Classes/Grid/grid_helpers.cpp -o main.exe
     ./main.exe
     ./render.py
 
     For Parallel (RECOMMENDED):
-    g++ -std=c++17 main.cpp Classes/Grid/grid.cpp -o main.exe -fopenmp
+    g++ -std=c++17 main.cpp Classes/Grid/grid_constructor.cpp Classes/Grid/grid_getters.cpp Classes/Grid/grid_simulation.cpp Classes/Grid/grid_helpers.cpp -o main.exe -fopenmp
     ./main.exe
     ./render.py
 */
@@ -37,7 +37,7 @@ int main() {
 
         max_energy_drift = std::max( grid.total_energy(), max_energy_drift );
 
-        if ( curr_time % 10 == 0 ) {
+        if ( curr_time % constant::print_rate == 0 ) {
             grid.print_progress( curr_time, constant::total_time );
             std::string t_sec{ std::to_string( curr_time ) };
             grid.vector_volume( "output/E/E" + t_sec + ".bin", constant::E_field );

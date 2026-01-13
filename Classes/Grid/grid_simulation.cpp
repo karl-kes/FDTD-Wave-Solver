@@ -1,24 +1,5 @@
 #include "grid.hpp"
 
-// Constructor:
-Grid::Grid( std::size_t new_Nx, std::size_t new_Ny, std::size_t new_Nz,
-            double new_dx, double new_dy, double new_dz,
-            double new_eps, double new_mu ):
-Nx_{ new_Nx }, Ny_{ new_Ny }, Nz_{ new_Nz },
-dx_{ new_dx }, dy_{ new_dy }, dz_{ new_dz },
-eps_{ new_eps }, mu_{ new_mu },
-c_{ 1.0 / std::sqrt( mu() * eps() ) },
-dt_{ constant::cfl_factor / ( c() * std::sqrt( 1.0/(dx()*dx()) + 1.0/(dy()*dy()) + 1.0/(dz()*dz()) ) ) } {
-    
-    std::size_t const grid_size{ Nx_ * Ny_ * Nz_ };
-    Ex_ = std::make_unique<double[]>( grid_size );
-    Ey_ = std::make_unique<double[]>( grid_size );
-    Ez_ = std::make_unique<double[]>( grid_size );
-    Bx_ = std::make_unique<double[]>( grid_size );
-    By_ = std::make_unique<double[]>( grid_size );
-    Bz_ = std::make_unique<double[]>( grid_size );
-}
-
 // System Simulation:
 void Grid::update_B() {
     // ∂B/∂t = -curl( E )
@@ -44,6 +25,7 @@ void Grid::update_B() {
         }
     }
 }
+
 void Grid::update_E() {
     // ∂E/∂t = c*c * curl(B)
     #pragma omp parallel for collapse( 2 )
@@ -54,34 +36,38 @@ void Grid::update_E() {
             for ( std::size_t x = 1; x < Nx(); ++x ) {
                 // Curl of components and apply E += ∂E:
                 // ∂E_x = ∂t * c*c * (∂E_z/∂y - ∂E_y/∂z)
-                Ex_[idx(x,y,z)] += dt() * c_sq() * curl_x( By_[idx(x,y,z-1)], By_[idx(x,y,z)],
-                                                           Bz_[idx(x,y-1,z)], Bz_[idx(x,y,z)] );
+                Ex_[idx(x,y,z)] += dt() * ( c_sq() * curl_x( By_[idx(x,y,z-1)], By_[idx(x,y,z)],
+                                                             Bz_[idx(x,y-1,z)], Bz_[idx(x,y,z)] - Jx_[idx(x,y,z)] / eps() ) );
 
                 // ∂E_y = ∂t * c*c * (∂Ex/∂z - ∂Ez/∂x)
-                Ey_[idx(x,y,z)] += dt() * c_sq() * curl_y( Bx_[idx(x,y,z-1)], Bx_[idx(x,y,z)],
-                                                           Bz_[idx(x-1,y,z)], Bz_[idx(x,y,z)] );
+                Ey_[idx(x,y,z)] += dt() * ( c_sq() * curl_y( Bx_[idx(x,y,z-1)], Bx_[idx(x,y,z)],
+                                                             Bz_[idx(x-1,y,z)], Bz_[idx(x,y,z)] - Jy_[idx(x,y,z)] / eps() ) );
 
                 // ∂E_z = ∂t * c*c * (∂Ex/∂y - ∂Ey/∂x)
-                Ez_[idx(x,y,z)] += dt() * c_sq() * curl_z( By_[idx(x-1,y,z)], By_[idx(x,y,z)],
-                                                           Bx_[idx(x,y-1,z)], Bx_[idx(x,y,z)] );
+                Ez_[idx(x,y,z)] += dt() * ( c_sq() * curl_z( By_[idx(x-1,y,z)], By_[idx(x,y,z)],
+                                                             Bx_[idx(x,y-1,z)], Bx_[idx(x,y,z)] - Jz_[idx(x,y,z)] / eps() ) ) ;
             }
         }
     }
 }
+
 void Grid::step() {
     update_B();
     update_E();
 }
+
 void Grid::hard_source_inject( double const value,
                                std::size_t const x, std::size_t const y, std::size_t const z ) {
     Ex_[idx(x,y,z)] += value;
     Ey_[idx(x,y,z)] += value;
     Ez_[idx(x,y,z)] += value;
 }
+
 void Grid::soft_source_inject( double const injection,
                                std::size_t const x, std::size_t const y, std::size_t const z ) {
 
 }
+
 void Grid::dipole_antenna_inject( double const amp_one, double const amp_two,
                                   double const freq_one, double const freq_two,
                                   double const injection,
@@ -94,10 +80,12 @@ void Grid::dipole_antenna_inject( double const amp_one, double const amp_two,
     Ey_[idx(Nx()-x,Ny()-y,Nz()-z)] += amp_two * std::sin( freq_two * injection );
     Ez_[idx(Nx()-x,Ny()-y,Nz()-z)] += amp_two * std::sin( freq_two * injection );
 }
+
 void Grid::gaussian_pulse_inject( double const injection,
                                   std::size_t const x, std::size_t const y, std::size_t const z ) {
 
 }
+
 void Grid::vector_volume( std::string const &file_name, char const field ) {
     std::ofstream file( file_name, std::ios::binary | std::ios::out );
 
@@ -127,44 +115,6 @@ void Grid::vector_volume( std::string const &file_name, char const field ) {
     file.close();
 }
 
-// Getters:
-// Dimensions
-std::size_t Grid::Nx() const {
-    return Nx_;
-}
-std::size_t Grid::Ny() const {
-    return Ny_;
-}
-std::size_t Grid::Nz() const {
-    return Nz_;
-}
-// Grid Size:
-double Grid::dx() const {
-    return dx_;
-}
-double Grid::dy() const {
-    return dy_;
-}
-double Grid::dz() const {
-    return dz_;
-}
-// Wave Constants:
-double Grid::eps() const {
-    return eps_;
-}
-double Grid::mu() const {
-    return mu_;
-}
-double Grid::c() const {
-    return c_;
-}
-double Grid::c_sq() const {
-    return c_*c_;
-}
-// Time Step:
-double Grid::dt() const {
-    return dt_;
-}
 // Fields
 double Grid::get_field( char const field,
                         char const component,
@@ -181,6 +131,7 @@ double Grid::get_field( char const field,
     throw std::invalid_argument{ "ERROR! CHECK PARAMETERS!" };
     return -1.0;
 }
+
 double Grid::field_mag( char const field,
                         std::size_t const x, std::size_t const y, std::size_t const z ) const {
     double Fx{ get_field( field, 'x', x, y, z ) };
@@ -188,67 +139,4 @@ double Grid::field_mag( char const field,
     double Fz{ get_field( field, 'z', x, y, z ) };
 
     return std::sqrt( Fx*Fx + Fy*Fy + Fz*Fz );
-}
-
-// Helpers:
-void Grid::print_progress( int curr_time, int total_time ) const {
-    double percent{ 100.0 * curr_time / total_time };
-    std::cout << "\rProgress: " << percent << "%" << std::flush;
-    
-    if ( curr_time == total_time ) {
-        std::cout << std::endl;
-    }
-}
-// Finds 3D index
-std::size_t Grid::idx( std::size_t const x, std::size_t const y, std::size_t const z ) const {
-    return x + Nx() * ( y + Ny() * z );
-}
-// Curls in X, Y, Z
-double Grid::curl_x( double const Y_0, double const Y_1,
-                     double const Z_0, double const Z_1 ) const {
-    double dZdY{ ( Z_1 - Z_0 ) / dy() };
-    double dYdZ{ ( Y_1 - Y_0 ) / dz() };
-
-    return ( dZdY - dYdZ );
-}
-double Grid::curl_y( double const X_0, double const X_1,
-                     double const Z_0, double const Z_1 ) const {
-    double dXdZ{ ( X_1 - X_0 ) / dz() };
-    double dZdX{ ( Z_1 - Z_0 ) / dx() };
-
-    return ( dXdZ - dZdX );
-}
-double Grid::curl_z( double const Y_0, double const Y_1,
-                     double const X_0, double const X_1 ) const {
-    double dYdX{ ( Y_1 - Y_0 ) / dx() };
-    double dXdY{ ( X_1 - X_0 ) / dy() };
-
-    return ( dYdX - dXdY );
-}
-double Grid::total_energy() const {
-    double energy{};
-    double dV{ dx() * dy() * dz() };
-
-    #pragma omp parallel for collapse( 2 ) reduction( +:energy )
-    for ( std::size_t z = 0; z < Nz(); ++z ) {
-        for ( std::size_t y = 0; y < Ny(); ++y ) {
-            for ( std::size_t x = 0; x < Nx(); ++x ) {
-                std::size_t i = idx(x,y,z);
-
-                double E_sq{ Ex_[i]*Ex_[i] + Ey_[i]*Ey_[i] + Ez_[i]*Ez_[i] };
-                double B_sq{ Bx_[i]*Bx_[i] + By_[i]*By_[i] + Bz_[i]*Bz_[i] };
-
-                // Electromagnetic Energy Density:
-                // 1/2 * e_0 * E^2 + 1/(2mu_0) * B^2
-                energy += 0.5 * ( eps() * E_sq + B_sq / mu() );
-            }
-        }
-    }
-    return energy * dV;
-}
-void Grid::create_directories() const {
-    // Clear previous and create new output folder.
-    std::filesystem::remove_all("output");
-    std::filesystem::create_directories("output/E");
-    std::filesystem::create_directories("output/B");
 }

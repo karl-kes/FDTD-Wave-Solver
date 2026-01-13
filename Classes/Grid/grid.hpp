@@ -10,7 +10,6 @@
 #include <string>
 #include <omp.h>
 #include <vector>
-#include <cstdint>
 #include <filesystem>
 
 class Grid {
@@ -23,6 +22,7 @@ private:
     double const dt_;                           // Time Differential
     std::unique_ptr<double[]> Ex_, Ey_, Ez_;    // Electric Field
     std::unique_ptr<double[]> Bx_, By_, Bz_;    // Magnetic Field
+    std::unique_ptr<double[]> Jx_, Jy_, Jz_;    // Current
 
 public:
     // Constructor:
@@ -51,33 +51,41 @@ public:
     void vector_volume( std::string const &file_name, char const field );
 
     // Getters:
-    // Differentials
-    double dx() const;
-    double dy() const;
-    double dz() const;
-    double dt() const;
-    // Speed, Mu, Epsilon
-    double c() const;
-    double c_sq() const;
-    double eps() const;
-    double mu() const;
     // Dimensions
     std::size_t Nx() const;
     std::size_t Ny() const;
     std::size_t Nz() const;
+
+    // Differentials
+    double dx() const;
+    double dy() const;
+    double dz() const;
+
+    // Wave Constants
+    double c() const;
+    double c_sq() const;
+    double eps() const;
+    double mu() const;
+
+    // Time Step
+    double dt() const;
+
     // Fields
     double get_field( char const field,
                       char const component,
                       std::size_t const x,
                       std::size_t const y,
                       std::size_t const z ) const;
+
     double field_mag( char const field,
                       std::size_t const x, std::size_t const y, std::size_t const z ) const;
 
     // Helpers:
     void print_progress( int curr_time, int total_time ) const;
+
     // Finds 3D index
     std::size_t idx( std::size_t const x, std::size_t const y, std::size_t const z ) const;
+
     // Curls in X, Y, Z
     double curl_x( double const Y_0, double const Y_1,
                    double const Z_0, double const Z_1 ) const;
@@ -90,6 +98,7 @@ public:
 
     // Total energy for validation
     double total_energy() const;
+
     // Deletes previous data and creates new files
     void create_directories() const;
 };
