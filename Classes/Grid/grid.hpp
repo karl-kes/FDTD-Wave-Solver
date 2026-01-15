@@ -2,16 +2,6 @@
 
 #include "../../config.hpp"
 
-#include <memory>
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <cctype>
-#include <string>
-#include <omp.h>
-#include <vector>
-#include <filesystem>
-
 class Grid {
 private:
     std::size_t const Nx_, Ny_, Nz_;            // Grid Size

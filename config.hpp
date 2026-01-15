@@ -1,6 +1,15 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <cctype>
+#include <string>
+#include <omp.h>
+#include <vector>
+#include <filesystem>
 
 namespace config {
     static constexpr char B_field{ 'b' };
