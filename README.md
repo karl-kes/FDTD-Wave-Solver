@@ -52,12 +52,12 @@ where α is a configurable CFL factor (default 0.1) for stability margin.
 
 ```bash
 # Compile with OpenMP (recommended)
-g++ -std=c++17 main.cpp \
-    Classes/Grid/grid_constructor.cpp \
-    Classes/Grid/grid_getters.cpp \
-    Classes/Grid/grid_simulation.cpp \
-    Classes/Grid/grid_helpers.cpp \
-    -o main.exe -fopenmp
+g++ -std=c++17 main.cpp
+               Classes/Grid/grid_constructor.cpp
+               Classes/Grid/grid_getters.cpp
+               Classes/Grid/grid_simulation.cpp
+               Classes/Grid/grid_helpers.cpp
+               -o main.exe -fopenmp
 
 # Run simulation
 ./main.exe
@@ -69,12 +69,12 @@ python render.py
 ### Without OpenMP
 
 ```bash
-g++ -std=c++17 main.cpp \
-    Classes/Grid/grid_constructor.cpp \
-    Classes/Grid/grid_getters.cpp \
-    Classes/Grid/grid_simulation.cpp \
-    Classes/Grid/grid_helpers.cpp \
-    -o main.exe
+g++ -std=c++17 main.cpp
+               Classes/Grid/grid_constructor.cpp
+               Classes/Grid/grid_getters.cpp
+               Classes/Grid/grid_simulation.cpp
+               Classes/Grid/grid_helpers.cpp
+               -o main.exe
 ```
 
 ## Configuration
