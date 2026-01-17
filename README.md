@@ -57,7 +57,7 @@ g++ -std=c++17 main.cpp
                Classes/Grid/grid_getters.cpp
                Classes/Grid/grid_simulation.cpp
                Classes/Grid/grid_helpers.cpp
-               -o main.exe -fopenmp
+               -o main.exe -fopenmp -O2
 
 # Run simulation
 ./main.exe

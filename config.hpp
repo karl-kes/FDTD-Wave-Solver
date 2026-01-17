@@ -16,7 +16,7 @@ namespace config {
     static constexpr char E_field{ 'e' };
     static constexpr double PI{ 3.14159 };
 
-    static constexpr std::size_t Nx{ 15 }, Ny{ 15 }, Nz{ 15 };
+    static constexpr std::size_t Nx{ 50 }, Ny{ 50 }, Nz{ 50 };
     static constexpr double dx{ 5.0 }, dy{ 5.0 }, dz{ 5.0 };
     static constexpr double eps{ 1.0 }, mu{ 1.0 };
 
