@@ -1,99 +1,100 @@
 #pragma once
 
-#include "../../config.hpp"
+#include <memory>
+#include <vector>
+#include <cmath>
+#include <stdexcept>
+#include <omp.h>
+
+#include "../Config/config.hpp"
+#include "../Source/source.hpp"
 
 class Grid {
 private:
-    std::size_t const Nx_, Ny_, Nz_;            // Grid Size
-    double const dx_, dy_, dz_;                 // Spatial Differentials
-    double const eps_;                          // Epsilon
-    double const mu_;                           // Mu
-    double const c_;                            // Speed
-    double const dt_;                           // Time Differential
-    std::unique_ptr<double[]> Ex_, Ey_, Ez_;    // Electric Field
-    std::unique_ptr<double[]> Bx_, By_, Bz_;    // Magnetic Field
-    std::unique_ptr<double[]> Jx_, Jy_, Jz_;    // Current
+    // Grid Dimensions:
+    std::size_t Nx_, Ny_, Nz_;
+
+    // Spatial Cell Size:
+    double dx_, dy_, dz_;
+
+    // Material Properties:
+    double eps_, mu_;
+
+    // Derived Constants:
+    double c_, dt_;
+
+    // Field Components:
+    std::unique_ptr<double[]> Ex_, Ey_, Ez_;
+    std::unique_ptr<double[]> Bx_, By_, Bz_;
+    std::unique_ptr<double[]> Jx_, Jy_, Jz_;
+
+    // Sources:
+    std::vector<std::unique_ptr<Source>> sources_;
+
+    // Private Methods:
+    // Finds flattened 1D index given 3D space:
+    std::size_t idx( std::size_t x, std::size_t y, std::size_t z ) const;
+
+    // Curl Calculation:
+    double curl_x( double Y_0, double Y_1,
+                   double Z_0, double Z_1) const;
+
+    double curl_y( double X_0, double X_1,
+                   double Z_0, double Z_1 ) const;
+
+    double curl_z( double Y_0, double Y_1,
+                   double X_0, double X_1 ) const;
+
+    // Field Updates:
+    void update_B();
+    void update_E();
 
 public:
     // Constructor:
-    Grid( std::size_t new_Nx = 12, std::size_t new_Ny = 12, std::size_t new_Nz = 12,
-          double new_dx = 5.0, double new_dy = 5.0, double new_dz = 5.0,
-          double new_eps = 1.0, double new_mu = 1.0 );
+    explicit Grid( Simulation_Config const &config );
+
+    // Non-copyable and Non-movable:
+    Grid (Grid const& ) = delete;
+    Grid &operator=( Grid const& ) = delete;
+    Grid( Grid&& ) = default;
+    Grid &operator=( Grid&& ) = default;
 
     // System Simulation:
-    void update_B();
-    void update_E();
     void step();
+    void apply_sources( double time_step );
+    void add_source( std::unique_ptr<Source> source );
 
-    void straight_wire_x( double const amp, double const freq,
-                          std::size_t const time,
-                          std::size_t const y, std::size_t const z );
+    // Field Access:
+    double field( char field, char component,
+                  std::size_t x, std::size_t y, std::size_t z ) const;
 
-    void hard_source_inject( double const value,
-                             std::size_t const x, std::size_t const y, std::size_t const z );
+    double &field( char field, char component,
+                   std::size_t x, std::size_t y, std::size_t z );
 
-    void soft_source_inject( double const injection, std::size_t const x,
-                             std::size_t const y, std::size_t const z );
+    double field_magnitude( char field,
+                            std::size_t x, std::size_t y, std::size_t z ) const;
 
-    void dipole_antenna_inject( double const amp_one, double const amp_two,
-                                double const freq_one, double const freq_two,
-                                double const injection,
-                                std::size_t const x, std::size_t const y, std::size_t const z );
-
-    void gaussian_pulse_inject( double const injection,
-                                std::size_t const x, std::size_t const y, std::size_t const z );
-
-    void vector_volume( std::string const &file_name, char const field );
+    // Current Access:
+    double &Jx( std::size_t x, std::size_t y, std::size_t z );
+    double &Jy( std::size_t x, std::size_t y, std::size_t z );
+    double &Jz( std::size_t x, std::size_t y, std::size_t z );
 
     // Getters:
-    // Dimensions
     std::size_t Nx() const;
     std::size_t Ny() const;
     std::size_t Nz() const;
 
-    // Differentials
     double dx() const;
     double dy() const;
     double dz() const;
 
-    // Wave Constants
-    double c() const;
-    double c_sq() const;
     double eps() const;
     double mu() const;
 
-    // Time Step
+    double c() const;
+    double c_sq() const;
     double dt() const;
 
-    // Fields
-    double get_field( char const field,
-                      char const component,
-                      std::size_t const x,
-                      std::size_t const y,
-                      std::size_t const z ) const;
-
-    double field_mag( char const field,
-                      std::size_t const x, std::size_t const y, std::size_t const z ) const;
-
-    // Helpers:
-    void print_progress( int curr_time, int total_time ) const;
-
-    // Finds 3D index
-    std::size_t idx( std::size_t const x, std::size_t const y, std::size_t const z ) const;
-
-    // Curls in X, Y, Z
-    double curl_x( double const Y_0, double const Y_1,
-                   double const Z_0, double const Z_1 ) const;
-
-    double curl_y( double const X_0, double const X_1,
-                   double const Z_0, double const Z_1 ) const;
-
-    double curl_z( double const Y_0, double const Y_1,
-                   double const X_0, double const X_1 ) const;
-
-    // Total energy for validation
+    // Diagnostics:
     double total_energy() const;
-
-    // Deletes previous data and creates new files
-    void create_directories() const;
 };

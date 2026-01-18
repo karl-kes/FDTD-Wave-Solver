@@ -48,3 +48,15 @@ double Grid::c_sq() const {
 double Grid::dt() const {
     return dt_;
 }
+
+double &Grid::Jx( std::size_t x, std::size_t y, std::size_t z ) {
+    return Jx_[idx(x, y, z)];
+}
+
+double &Grid::Jy( std::size_t x, std::size_t y, std::size_t z ) {
+    return Jy_[idx(x, y, z)];
+}
+
+double &Grid::Jz( std::size_t x, std::size_t y, std::size_t z ) {
+    return Jz_[idx(x, y, z)];
+}

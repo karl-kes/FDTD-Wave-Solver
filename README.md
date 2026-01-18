@@ -52,12 +52,7 @@ where α (0 < α <= 1.0) is a configurable CFL factor (default 0.1) for stabilit
 
 ```bash
 # Compile with OpenMP (recommended)
-g++ -std=c++17 main.cpp
-               Classes/Grid/grid_constructor.cpp
-               Classes/Grid/grid_getters.cpp
-               Classes/Grid/grid_simulation.cpp
-               Classes/Grid/grid_helpers.cpp
-               -o main.exe -fopenmp -O2
+g++ -std=c++17 -O2 -fopenmp main.cpp Classes/Grid/*.cpp Classes/Source/*.cpp Classes/Write_Output/*.cpp -o main.exe
 
 # Run simulation
 ./main.exe
@@ -69,12 +64,7 @@ python render.py
 ### Without OpenMP
 
 ```bash
-g++ -std=c++17 main.cpp
-               Classes/Grid/grid_constructor.cpp
-               Classes/Grid/grid_getters.cpp
-               Classes/Grid/grid_simulation.cpp
-               Classes/Grid/grid_helpers.cpp
-               -o main.exe
+g++ -std=c++17 main.cpp Classes/Grid/*.cpp Classes/Source/*.cpp Classes/Write_Output/*.cpp -o main.exe
 ```
 
 ## Configuration
@@ -83,7 +73,7 @@ All simulation parameters are centralized in `config.hpp`:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `Nx, Ny, Nz` | Grid dimensions | 15 |
+| `Nx, Ny, Nz` | Grid dimensions | 16 |
 | `dx, dy, dz` | Spatial step sizes | 5.0 |
 | `eps, mu` | Permittivity and permeability | 1.0 |
 | `cfl_factor` | CFL stability factor | 0.1 |
@@ -96,8 +86,7 @@ All simulation parameters are centralized in `config.hpp`:
 The simulator supports several excitation methods:
 
 - **`straight_wire_x()`** - Sinusoidal current along x-axis
-- **`hard_source_inject()`** - Direct field injection at a point
-- **`dipole_antenna_inject()`** - Dual-point oscillating source
+- **`point_source()`** - Direct field injection at a point
 
 ## Visualization
 
